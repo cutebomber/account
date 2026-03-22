@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TG Session Backup</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #5b7cf7;
+    --accent-hover: #4a6be6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 20px;
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 12px;
+  }
+  header .logo { font-size: 22px; }
+  header h1 { font-size: 17px; font-weight: 700; }
+  header p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .section-title {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em;
+    padding: 24px 20px 10px;
+  }
+
+  /* Account cards */
+  .account-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 0 16px 12px;
+    padding: 16px;
+    transition: border-color .2s;
+  }
+  .account-card:hover { border-color: var(--accent); }
+
+  .account-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+  }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .account-info h3 { font-size: 15px; font-weight: 600; }
+  .account-info p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .badge {
+    margin-left: auto;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .badge.online  { background: rgba(34,197,94,.15);  color: var(--green); }
+  .badge.offline { background: rgba(239,68,68,.15);  color: var(--red); }
+
+  .account-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Buttons */
+  .btn {
+    border: none; border-radius: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 600; padding: 9px 16px;
+    transition: opacity .15s, transform .1s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary   { background: var(--accent);           color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-ghost     { background: var(--border);            color: var(--text); }
+  .btn-ghost:hover { background: #33374a; }
+  .btn-danger    { background: rgba(239,68,68,.15);      color: var(--red); }
+  .btn-danger:hover { background: rgba(239,68,68,.25); }
+  .btn-full      { width: 100%; justify-content: center; }
+
+  /* Send message panel */
+  .send-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 0 16px 12px;
+    padding: 16px;
+    display: none;
+  }
+  .send-panel.open { display: block; }
+  .send-panel h4 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  input, textarea, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 14px;
+    padding: 10px 14px; outline: none; margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--card); }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1e2130; border: 1px solid var(--border);
+    border-radius: 30px; padding: 10px 20px;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+    white-space: nowrap; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error   { border-color: var(--red);   color: var(--red); }
+
+  .empty {
+    text-align: center; padding: 48px 24px; color: var(--muted);
+    font-size: 14px; line-height: 1.6;
+  }
+  .empty .icon { font-size: 48px; margin-bottom: 16px; }
+
+  .spinner {
+    text-align: center; padding: 48px;
+    color: var(--muted); font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🔐</div>
+  <div>
+    <h1>Session Backup</h1>
+    <p id="subtitle">Loading accounts…</p>
+  </div>
+</header>
+
+<div id="accounts-section">
+  <div class="section-title">Saved Accounts</div>
+  <div id="accounts-list">
+    <div class="spinner">⏳ Fetching accounts…</div>
+  </div>
+</div>
+
+<!-- Global send panel (shown when user taps Send on a card) -->
+<div class="send-panel" id="send-panel">
+  <h4>✉️ Send Message</h4>
+  <label>From account</label>
+  <select id="send-from"></select>
+  <label>Recipient (username / phone / user ID)</label>
+  <input type="text" id="send-to" placeholder="@username or +91…"/>
+  <label>Message</label>
+  <textarea id="send-text" placeholder="Type your message…"></textarea>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary" onclick="submitSend()">Send 🚀</button>
+    <button class="btn btn-ghost"   onclick="closeSendPanel()">Cancel</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const BASE   = "";     // same origin
+const INIT   = tg?.initData || "";
+
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { "Content-Type": "application/json", "X-Init-Data": INIT },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Request failed");
+  }
+  return res.json();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, type = "") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "show " + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.className = "", 3000);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+let _accounts = [];
+
+function renderAccounts(accounts) {
+  _accounts = accounts;
+  const list = document.getElementById("accounts-list");
+  const sub  = document.getElementById("subtitle");
+  const connected = accounts.filter(a => a.connected).length;
+  sub.textContent = `${accounts.length} saved · ${connected} online`;
+
+  if (accounts.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        <div class="icon">📭</div>
+        No accounts saved yet.<br>Use <b>/addaccount</b> in the bot chat to add one.
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = accounts.map(acc => {
+    const initial = (acc.name || acc.phone)[0].toUpperCase();
+    const badge   = acc.connected
+      ? `<span class="badge online">● Online</span>`
+      : `<span class="badge offline">○ Offline</span>`;
+    const uname = acc.username ? `@${acc.username} · ` : "";
+    return `
+      <div class="account-card">
+        <div class="account-header">
+          <div class="avatar">${initial}</div>
+          <div class="account-info">
+            <h3>${esc(acc.name)}</h3>
+            <p>${uname}${esc(acc.phone)}</p>
+          </div>
+          ${badge}
+        </div>
+        <div class="account-actions">
+          ${acc.connected ? `<button class="btn btn-primary" onclick="openSendPanel('${esc(acc.phone)}')">✉️ Send</button>` : ""}
+          <button class="btn btn-danger" onclick="removeAccount('${esc(acc.phone)}')">🗑 Remove</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  // Populate select in send panel
+  const sel = document.getElementById("send-from");
+  sel.innerHTML = accounts
+    .filter(a => a.connected)
+    .map(a => `<option value="${esc(a.phone)}">${esc(a.name)} (${esc(a.phone)})</option>`)
+    .join("");
+}
+
+function esc(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadAccounts() {
+  try {
+    const data = await api("GET", "/api/accounts");
+    renderAccounts(data.accounts);
+  } catch (e) {
+    document.getElementById("accounts-list").innerHTML =
+      `<div class="empty"><div class="icon">⚠️</div>${e.message}</div>`;
+  }
+}
+
+// ── Remove account ────────────────────────────────────────────────────────────
+async function removeAccount(phone) {
+  if (!confirm(`Remove ${phone}? The session file will be deleted.`)) return;
+  try {
+    await api("POST", "/api/disconnect", { phone });
+    toast("Account removed", "success");
+    loadAccounts();
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+// ── Send message ──────────────────────────────────────────────────────────────
+function openSendPanel(phone) {
+  document.getElementById("send-from").value = phone;
+  document.getElementById("send-to").value   = "";
+  document.getElementById("send-text").value = "";
+  const panel = document.getElementById("send-panel");
+  panel.classList.add("open");
+  panel.scrollIntoView({ behavior: "smooth" });
+}
+
+function closeSendPanel() {
+  document.getElementById("send-panel").classList.remove("open");
+}
+
+async function submitSend() {
+  const phone     = document.getElementById("send-from").value.trim();
+  const recipient = document.getElementById("send-to").value.trim();
+  const text      = document.getElementById("send-text").value.trim();
+  if (!recipient || !text) { toast("Fill all fields", "error"); return; }
+  try {
+    await api("POST", "/api/send", { phone, recipient, text });
+    toast("Message sent! ✅", "success");
+    closeSendPanel();
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadAccounts();
+setInterval(loadAccounts, 15000);   // refresh every 15 s
+</script>
+</body>
+</html>
