@@ -15,8 +15,3 @@ API_HASH: str = "fb46a136fed4a4de27ab057c7027fec3"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SESSIONS_DIR: str = "sessions"             # folder where session files are saved
-
-# ── Mini App ──────────────────────────────────────────────────────────────────
-MINIAPP_URL: str = "https://your-domain.com"   # must be HTTPS for Telegram
-MINIAPP_PORT: int = 8080
-MINIAPP_SECRET: str = "replace_with_random_string"  # used to sign API requests
