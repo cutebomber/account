@@ -12,10 +12,10 @@ from aiogram.types import (
     CallbackQuery,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    WebAppInfo,
+
 )
 
-from config import OWNER_ID, MINIAPP_URL
+from config import OWNER_ID
 from session_manager import SessionManager
 
 logger = logging.getLogger(__name__)
@@ -68,11 +68,6 @@ async def cmd_start(message: Message, session_manager: SessionManager):
         [InlineKeyboardButton(text="📋 List accounts", callback_data="list_accounts")],
         [InlineKeyboardButton(text="✉️ Send message", callback_data="send_message")],
     ]
-    if MINIAPP_URL:
-        buttons.append([InlineKeyboardButton(
-            text="🖥 Open Mini App",
-            web_app=WebAppInfo(url=MINIAPP_URL),
-        )])
 
     await message.answer(
         f"👋 *Telegram Session Backup Bot*\n\n"
@@ -301,11 +296,6 @@ async def cb_back_home(call: CallbackQuery, state: FSMContext, session_manager: 
         [InlineKeyboardButton(text="📋 List accounts", callback_data="list_accounts")],
         [InlineKeyboardButton(text="✉️ Send message", callback_data="send_message")],
     ]
-    if MINIAPP_URL:
-        buttons.append([InlineKeyboardButton(
-            text="🖥 Open Mini App",
-            web_app=WebAppInfo(url=MINIAPP_URL),
-        )])
     await call.message.edit_text(
         f"👋 *Telegram Session Backup Bot*\n\n"
         f"📱 Saved accounts: *{count}* ({connected} connected)\n\n"
